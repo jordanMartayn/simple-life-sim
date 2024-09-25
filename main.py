@@ -3,8 +3,8 @@ import math
 import pygame
 
 # pygame setup
-screenX = 1280
-screenY = 720
+screenX = 1080
+screenY = 600
 pygame.init()
 screen = pygame.display.set_mode((screenX, screenY))
 clock = pygame.time.Clock()
@@ -23,7 +23,7 @@ class Herbivore:
     scale = 10
     size = 1
     radius = scale * size
-    speed = 100 #pixels/second
+    speed = 20 #pixels/second
     goal = (0,0)
     moveAgregate = (0,0)
 
@@ -45,10 +45,10 @@ class Herbivore:
         # if its off screen i want it to un wittingly head towards the goal regardless.
         randomDistanceX = math.sin(randomAzRads) * randomDistance
         randomDistanceY = math.cos(randomAzRads) * randomDistance
-        goalXpos = randomDistanceX - self.origin[0]
-        goalYpos = randomDistanceY - self.origin[1]
-        self.goal[0] = goalXpos
-        self.goal[1] = goalYpos
+
+        goalXpos = randomDistanceX + self.origin[0]
+        goalYpos = randomDistanceY + self.origin[1]
+        self.goal = (goalXpos,goalYpos)
     
     # need a way to check if colided with boundry then updateGoal
 
@@ -64,18 +64,40 @@ class Herbivore:
         frameTime = 1 / fps
         frameDist = self.speed * frameTime
 
-        
+        #Keeping track of direction True is positive which in py game is right and down
+        directionX = True
+        directionY = True        
+
+        #getting a ratio between distance components
         distToGoalX = self.goal[0] - self.origin[0]
         distToGoalY = self.goal[1] - self.origin[1]
         distXYRatio = 0
         if not distToGoalY == 0: 
+            
+            if distToGoalX < 0:
+                distToGoalX = -1 * distToGoalX
+                directionX = False
+
+            if distToGoalY < 0:
+                distToGoalY = -1 * distToGoalY
+                directionY = False
+
             distXYRatio = distToGoalX / distToGoalY
-        
 
         # so it gets a bit wild here, im using the ratio between x and y & the frameDist to find the x and y componants to frame distance (d)
         # after subsiting in r = x/y and d = 2root of (x^2 + y^2) we can get y = d / sqroot(r^2 + 1) and x = d*r / sqroot(r^2 + 1)
         frameDistXComp = (frameDist * distXYRatio) / math.sqrt( distXYRatio ** 2 + 1 )
+
+        #adding direction back to X
+        if not directionX:
+            frameDistXComp = -1 * frameDistXComp
+
         frameDistYComp = frameDist / math.sqrt( distXYRatio ** 2 + 1)
+        
+        #adding direction back to X
+        if not directionY:
+            frameDistYComp = -1 * frameDistYComp
+        
         #print('x comp: ',frameDistXComp,'y comp: ',frameDistYComp)
 
         # because the distance per frame will be so small we need to do a running agregate so when it's 
@@ -105,7 +127,8 @@ class Herbivore:
 def spawnHerbivore():
     randomXStart = random.randint(0,screenX)
     randomYStart = random.randint(0,screenY)
-    Herbivore( (randomXStart,randomYStart) )
+    herb = Herbivore( (randomXStart,randomYStart) )
+    herb.updateGoal()
 
 # executions
 for i in range(numberOfHerbs):
@@ -115,8 +138,10 @@ for i in range(numberOfHerbs):
 while running:
     # poll for events
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        # quite on 'k' or QUIT event like clicking x
+        if event.type == pygame.QUIT or ( event.type == pygame.KEYUP and event.key == 107 ): 
             running = False
+
 
     screen.fill("grey")
 
